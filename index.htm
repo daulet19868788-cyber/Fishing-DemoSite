@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Elite Sport Fishing — Demo</title>
+  <meta name="description" content="Премиальный сайт для мобильной игры о спортивной рыбалке — 3D сцена и скролл-анимация."/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg-1:#001018; --bg-2:#001f33;
+      --accent-start:#00bfff; --accent-end:#0077ff;
+      --glass: rgba(255,255,255,0.03);
+      --muted: rgba(255,255,255,0.7);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,Arial,Helvetica,sans-serif;color:#fff;background:linear-gradient(180deg,var(--bg-1),var(--bg-2));-webkit-font-smoothing:antialiased;}
+    /* Canvas */
+    canvas#three-canvas{ position:fixed; inset:0; width:100%; height:100%; z-index:1; display:block; }
+
+    /* Page */
+    .page{ position:relative; z-index:5; max-width:1200px; margin:0 auto; padding:32px; }
+
+    /* Hero */
+    header.hero{ min-height:100vh; display:flex; align-items:center; justify-content:space-between; gap:24px; padding-top:6vh; }
+    .hero-left{ max-width:640px }
+    .eyebrow{ font-size:12px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-bottom:10px }
+    h1{ font-size:44px; margin:0 0 16px 0; line-height:1.02; text-shadow:0 8px 40px rgba(0,0,0,0.6) }
+    p.lead{ margin:0 0 20px 0; color:rgba(255,255,255,0.88); font-size:16px; max-width:56ch; }
+
+    .cta-row{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+    .store-btn{
+      display:inline-flex; align-items:center; gap:10px; padding:12px 16px; border-radius:12px; text-decoration:none; color:#fff;
+      background:linear-gradient(90deg,var(--accent-start),var(--accent-end)); box-shadow:0 10px 30px rgba(0,119,255,0.12); font-weight:700;
+    }
+    .store-ghost{ background:transparent; border:1px solid rgba(255,255,255,0.06); padding:10px 14px; border-radius:12px; color: #dfefff; font-weight:700 }
+
+    .hero-right{ width:320px; background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:14px; padding:16px; backdrop-filter: blur(6px); border:1px solid rgba(255,255,255,0.02); }
+
+    .stat{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px }
+    .stat .left{font-size:13px;color:var(--muted)} .stat .right{ font-weight:800 }
+
+    /* Sections */
+    section.block{ padding:72px 0; border-top:1px solid rgba(255,255,255,0.02); }
+    .features{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:18px; margin-top:24px }
+    .card{ background:var(--glass); border-radius:12px; padding:18px; border:1px solid rgba(255,255,255,0.02); transition:transform .35s,box-shadow .35s; }
+    .card:hover{ transform:translateY(-8px); box-shadow:0 18px 60px rgba(0,0,0,0.6); }
+
+    .grid-3{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px }
+    .ambassadors{ display:flex; gap:12px; flex-wrap:wrap; margin-top:18px }
+    .ambassador{ width:120px; text-align:center; background:rgba(255,255,255,0.02); padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.02) }
+
+    .subscribe{ display:flex; gap:12px; align-items:center; margin-top:18px; max-width:720px }
+    .subscribe input{ flex:1; padding:12px 14px; border-radius:10px; border:1px solid rgba(255,255,255,0.06); background:transparent; color:#fff }
+    .subscribe button{ padding:12px 16px; border-radius:10px; border:0; background:linear-gradient(90deg,var(--accent-start),var(--accent-end)); color:#fff; font-weight:700 }
+
+    .reviews{ display:flex; gap:14px; overflow:auto; padding-bottom:6px; margin-top:18px }
+    .review{ min-width:260px; background:var(--glass); padding:16px; border-radius:10px; border:1px solid rgba(255,255,255,0.02) }
+
+    footer{ padding:26px 0; text-align:center; color:rgba(255,255,255,0.6); font-size:13px }
+
+    @media (max-width:900px){
+      header.hero{ flex-direction:column; align-items:flex-start }
+      .hero-right{ width:100% }
+      .grid-3{ grid-template-columns:repeat(auto-fit,minmax(150px,1fr)) }
+    }
+
+    /* helper */
+    .badge { display:inline-flex; align-items:center; gap:8px; padding:8px 10px; border-radius:10px; background:rgba(255,255,255,0.03); font-weight:700 }
+  </style>
+</head>
+<body>
+
+  <!-- Canvas -->
+  <canvas id="three-canvas"></canvas>
+
+  <!-- Page content -->
+  <div class="page">
+
+    <!-- HERO -->
+    <header class="hero">
+      <div class="hero-left">
+        <div class="eyebrow">Elite Sport Fishing</div>
+        <h1 id="hero-title">Погрузись в мир спортивной рыбалки — прямо сейчас</h1>
+        <p class="lead" id="hero-sub">Премиальная мобильная игра с реалистичной физикой заброса, подводными пейзажами и соревнованиями. Демонстрация бренда и игровой атмосферы в одной странице.</p>
+
+        <div class="cta-row">
+          <!-- App Store badge (SVG simplified) -->
+          <a class="store-btn" id="btn-appstore" href="#" aria-label="Скачать в App Store">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="flex-shrink:0"><path d="M7 7h10v10H7z" fill="white" opacity="0.06"/></svg>
+            App Store
+          </a>
+
+          <!-- Google Play badge -->
+          <a class="store-btn" id="btn-playstore" href="#" aria-label="Скачать в Google Play">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="flex-shrink:0"><path d="M3 12l9-7 9 7-9 7z" fill="white" opacity="0.06"/></svg>
+            Google Play
+          </a>
+
+          <a class="store-ghost" id="btn-trailer" href="javascript:void(0)">Посмотреть трейлер</a>
+        </div>
+
+        <div style="margin-top:12px; color:var(--muted)">Скролль вниз — посмотри сцену заброса → погружения → встречи с рыбой</div>
+      </div>
+
+      <aside class="hero-right" aria-hidden="false">
+        <div class="stat"><div class="left">Предзаказы</div><div class="right">10k+</div></div>
+        <div class="stat"><div class="left">Рейтинг</div><div class="right">4.9</div></div>
+        <div style="height:1px;background:rgba(255,255,255,0.02);margin:12px 0"></div>
+        <div style="font-size:13px;color:var(--muted)">Команда: <strong>BlueWave Studio</strong></div>
+        <div style="margin-top:10px"><span class="badge">iOS • Android</span></div>
+      </aside>
+    </header>
+
+    <!-- FEATURES -->
+    <section id="features" class="block" aria-labelledby="features-title">
+      <h2 id="features-title">Особенности</h2>
+      <div class="features" id="features-grid">
+        <div class="card">Реалистичная физика заброса</div>
+        <div class="card">Динамичный подводный мир</div>
+        <div class="card">Соревнования и лига</div>
+        <div class="card">Коллекционные трофеи</div>
+        <div class="card">Кастомизация снастей</div>
+        <div class="card">Мультиплеер и кланы</div>
+      </div>
+    </section>
+
+    <!-- COMMUNITY -->
+    <section id="community" class="block">
+      <h2>Сообщество</h2>
+      <div class="grid-3">
+        <div class="card">Создатели — dev team, дизайнеры и композитор</div>
+        <div class="card">Послы — профессиональные рыболовы</div>
+        <div class="card">Партнёры — бренды и федерации</div>
+      </div>
+    </section>
+
+    <!-- AMBASSADORS -->
+    <section id="ambassadors" class="block">
+      <h2>Избранные послы</h2>
+      <div class="ambassadors" id="ambassadors-list">
+        <div class="ambassador"><div style="height:72px;background:linear-gradient(90deg,var(--accent-start),var(--accent-end));border-radius:8px;margin-bottom:8px"></div><div style="font-weight:700">A. Ivanov</div><div style="font-size:12px;color:var(--muted)">Про-рекордсмен</div></div>
+        <div class="ambassador"><div style="height:72px;background:linear-gradient(90deg,var(--accent-start),var(--accent-end));border-radius:8px;margin-bottom:8px"></div><div style="font-weight:700">K. Petrova</div><div style="font-size:12px;color:var(--muted)">Тренер</div></div>
+        <div class="ambassador"><div style="height:72px;background:linear-gradient(90deg,var(--accent-start),var(--accent-end));border-radius:8px;margin-bottom:8px"></div><div style="font-weight:700">L. Smith</div><div style="font-size:12px;color:var(--muted)">Influencer</div></div>
+      </div>
+    </section>
+
+    <!-- SUBSCRIBE -->
+    <section id="subscribe" class="block">
+      <h2>Подписаться на новости</h2>
+      <div class="subscribe" role="form" aria-label="Подписка на рассылку">
+        <input id="email" type="email" placeholder="Ваш email">
+        <button id="subscribe-btn">Подписаться</button>
+      </div>
+    </section>
+
+    <!-- REVIEWS -->
+    <section id="reviews" class="block">
+      <h2>Отзывы</h2>
+      <div class="reviews">
+        <div class="review">«Затягивает как настоящая рыбалка — графика и ощущение отличные» — GamerMag</div>
+        <div class="review">«Реализм снастей — на высоте» — FishingPro</div>
+        <div class="review">«Лучший спортивный сим 2025» — MobileAwards</div>
+      </div>
+    </section>
+
+    <footer>
+      © <span id="year"></span> Elite Sport Fishing — Все права защищены • Демонстрация для клиента
+    </footer>
+
+  </div>
+
+  <!-- Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+
+  <!-- Main script -->
+  <script>
+  // ---------- Renderer / Scene / Camera ----------
+  const canvas = document.getElementById('three-canvas');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  let DPR = window.devicePixelRatio || 1;
+  if (/Mobi|Android/i.test(navigator.userAgent)) DPR = Math.min(DPR, 1.25);
+  renderer.setPixelRatio(DPR);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.0;
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x001825, 0.03);
+
+  const camera = new THREE.PerspectiveCamera(48, window.innerWidth/window.innerHeight, 0.1, 200);
+  camera.position.set(0, 2.2, 7);
+
+  // lights
+  const hemi = new THREE.HemisphereLight(0x88e6ff, 0x001022, 0.6);
+  scene.add(hemi);
+  const dir = new THREE.DirectionalLight(0xaaffff, 1.1);
+  dir.position.set(5, 10, 5);
+  scene.add(dir);
+  const rim = new THREE.PointLight(0x73d1ff, 0.6, 30);
+  rim.position.set(-6, 2, 6);
+  scene.add(rim);
+
+  // ---------- Objects ----------
+  // Rod group (stylized)
+  const rodGroup = new THREE.Group();
+  const rodMat = new THREE.MeshStandardMaterial({ color: 0xbfcfd6, metalness: 0.2, roughness: 0.3 });
+  const rodStem = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 4, 12), rodMat);
+  rodStem.position.set(-1.5, 2.0, -0.5);
+  rodStem.rotation.z = Math.PI / 8;
+  rodGroup.add(rodStem);
+  const reel = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.05, 12, 30), new THREE.MeshStandardMaterial({ color:0x223344, metalness:0.8, roughness:0.2 }));
+  reel.position.set(-1.05, 1.2, -0.3);
+  rodGroup.add(reel);
+  scene.add(rodGroup);
+
+  // Line (tube following a curve)
+  const linePts = [];
+  for (let i=0;i<22;i++) linePts.push(new THREE.Vector3(-0.2 - i*0.02, 1.6 - i*0.14, -0.2 - i*0.03));
+  const lineCurve = new THREE.CatmullRomCurve3(linePts);
+  const lineGeo = new THREE.TubeGeometry(lineCurve, 64, 0.01, 8, false);
+  const lineMat = new THREE.MeshBasicMaterial({ color:0xc7dfefff, transparent:true, opacity:0.95 });
+  const lineMesh = new THREE.Mesh(lineGeo, lineMat);
+  scene.add(lineMesh);
+
+  // Bait
+  const baitMat = new THREE.MeshStandardMaterial({ color: 0xff6b6b, emissive: 0x220000, metalness: 0.1, roughness:0.4 });
+  const bait = new THREE.Mesh(new THREE.SphereGeometry(0.16, 32, 24), baitMat);
+  bait.position.set(-0.8, 1.0, -1.0);
+  scene.add(bait);
+
+  // Fish (stylized)
+  const fishGroup = new THREE.Group();
+  const fishBody = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.6, 6, 12), new THREE.MeshStandardMaterial({ color:0x0fe0c8, metalness:0.1, roughness:0.6 }));
+  fishBody.rotation.y = Math.PI/6;
+  fishGroup.add(fishBody);
+  const tail = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.6, 12), new THREE.MeshStandardMaterial({ color:0x07bfa6, metalness:0.05, roughness:0.6 }));
+  tail.position.set(-0.65, 0, -0.04);
+  tail.rotation.z = Math.PI;
+  fishGroup.add(tail);
+  fishGroup.position.set(1.6, -2.2, -2.4);
+  fishGroup.scale.set(0.9,0.9,0.9);
+  scene.add(fishGroup);
+
+  // Bubbles
+  const bubbleCount = /Mobi|Android/i.test(navigator.userAgent) ? 80 : 220;
+  const bubbleGeo = new THREE.BufferGeometry();
+  const bubblePos = new Float32Array(bubbleCount * 3);
+  for (let i = 0; i < bubbleCount; i++) {
+    bubblePos[i*3+0] = (Math.random() - 0.5) * 12;
+    bubblePos[i*3+1] = Math.random() * 6 - 6;
+    bubblePos[i*3+2] = (Math.random() - 0.5) * 8;
+  }
+  bubbleGeo.setAttribute('position', new THREE.BufferAttribute(bubblePos, 3));
+  const bubbleMat = new THREE.PointsMaterial({ size: /Mobi|Android/i.test(navigator.userAgent) ? 0.04 : 0.08, color:0xdbefff, transparent:true, opacity:0.85, depthWrite:false });
+  const bubbles = new THREE.Points(bubbleGeo, bubbleMat);
+  scene.add(bubbles);
+
+  // floor (background)
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(200,200), new THREE.MeshStandardMaterial({ color:0x001a22, metalness:0.1, roughness:1 }));
+  floor.rotation.x = -Math.PI/2;
+  floor.position.y = -30;
+  scene.add(floor);
+
+  // ---------- Scroll timeline ----------
+  gsap.registerPlugin(ScrollTrigger);
+  const timeline = gsap.timeline({
+    scrollTrigger: {
+      trigger: ".page",
+      start: "top top",
+      end: "bottom bottom",
+      scrub: 0.9
+    }
+  });
+
+  timeline.to(rodGroup.rotation, { z: -0.6, x: 0.1, duration: 1.2, ease: "power3.out" }, 0);
+  timeline.to(bait.position, { x: -0.2, y: 1.5, z: -1.6, duration: 1.1, ease: "power2.out" }, 0.05);
+  timeline.to(bait.position, { x: 0.0, y: -1.2, z: -2.8, duration: 1.6, ease: "power2.in" }, 1.2);
+  timeline.to(camera.position, { x: 0, y: -1.5, z: 4.2, duration: 1.6, ease:"power2.inOut" }, 2.3);
+  timeline.to(scene.fog, { density: 0.08, duration: 1.6, ease:"power2.inOut" }, 2.3);
+  timeline.to(dir, { intensity: 0.35, duration: 1.6, ease:"power2.inOut" }, 2.3);
+  timeline.to(rim, { intensity: 0.25, duration: 1.6, ease:"power2.inOut" }, 2.3);
+  timeline.to(fishGroup.position, { x: 0.2, y: -0.8, z: -1.6, duration: 1.8, ease:"power2.out" }, 3.9);
+  timeline.to(fishGroup.rotation, { y: 0.1, duration: 1.8 }, 3.9);
+  timeline.to(camera.position, { x: 0, y: 2.2, z: 6.2, duration: 1.4, ease:"power2.inOut" }, 5.8);
+  timeline.to(scene.fog, { density: 0.03, duration: 1.4, ease:"power2.inOut" }, 5.8);
+  timeline.to(dir, { intensity: 1.05, duration: 1.4, ease:"power2.inOut" }, 5.8);
+  timeline.to(rim, { intensity: 0.6, duration: 1.4, ease:"power2.inOut" }, 5.8);
+
+  // ---------- Render loop ----------
+  const linePositions = lineGeo.attributes.position;
+  const lineBasePts = [];
+  for (let i=0;i<linePositions.count;i++) lineBasePts.push(new THREE.Vector3().fromBufferAttribute(linePositions, i));
+
+  let ttime = 0;
+  function animate(){
+    ttime += 0.016;
+    // fish wag / tail
+    fishGroup.rotation.z = Math.sin(ttime * 2) * 0.12;
+    tail.rotation.y = Math.sin(ttime * 6) * 0.8;
+
+    // bait bob
+    if (bait.position.y < 0.5) {
+      bait.position.y += Math.sin(ttime * 3) * 0.004;
+      bait.rotation.y += 0.02;
+    } else {
+      bait.rotation.y += 0.01;
+    }
+
+    // update line vertices to follow bait
+    for (let i=0;i<lineBasePts.length;i++){
+      const t = i / (lineBasePts.length - 1);
+      const rodTip = new THREE.Vector3(-0.6, 1.3, -0.4);
+      const target = rodTip.clone().lerp(bait.position, t*1.05);
+      target.x += Math.sin(ttime * 1.5 + t*4.0) * 0.02 * (1 - t);
+      target.z += Math.cos(ttime * 1.3 + t*3.0) * 0.02 * (t);
+      linePositions.setXYZ(i, target.x, target.y, target.z);
+    }
+    linePositions.needsUpdate = true;
+
+    // bubbles rising
+    const positions = bubbleGeo.attributes.position.array;
+    for (let i=0;i<bubbleCount;i++){
+      positions[i*3+1] += 0.01 + Math.random()*0.01;
+      if (positions[i*3+1] > 6) {
+        positions[i*3+1] = -6 - Math.random()*3;
+        positions[i*3+0] = (Math.random()-0.5)*12;
+        positions[i*3+2] = (Math.random()-0.5)*8;
+      }
+    }
+    bubbleGeo.attributes.position.needsUpdate = true;
+
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate);
+  }
+  animate();
+
+  // ---------- UI handlers ----------
+  document.getElementById('btn-trailer').addEventListener('click', () => {
+    gsap.to(camera.position, { x: 0, y: 1.2, z: 3.6, duration: 0.9, ease: 'power2.inOut' });
+    gsap.to(scene.fog, { density: 0.12, duration: 0.9 });
+    setTimeout(()=> {
+      gsap.to(camera.position, { x: 0, y:2.2, z:6.2, duration: 1.1, ease:'power2.inOut' });
+      gsap.to(scene.fog, { density: 0.03, duration: 1.1 });
+    }, 1700);
+  });
+
+  document.getElementById('subscribe-btn').addEventListener('click', () => {
+    const email = document.getElementById('email').value.trim();
+    if (!email || !email.includes('@')) { alert('Введи корректный email'); return; }
+    document.getElementById('subscribe-btn').innerText = 'Спасибо!';
+    setTimeout(()=> document.getElementById('subscribe-btn').innerText = 'Подписаться', 2200);
+  });
+
+  // responsive
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  document.getElementById('year').innerText = (new Date()).getFullYear();
+
+  // ---------- Notes ----------
+  // • Для production: заменить примитивы на .glb модели (GLTFLoader), добавить PBR-текстуры, postprocessing (bloom/tonemapping),
+  //   draco compression и LOD. Я могу сделать это на следующем шаге (вставить реальные модели и оптимизировать).
+  </script>
+</body>
+</html>
